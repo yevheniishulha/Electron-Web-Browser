@@ -1,6 +1,7 @@
 import { observable, computed, action } from 'mobx';
 import * as React from 'react';
 import { ipcRenderer } from 'electron';
+// @ts-ignore
 import * as Vibrant from 'node-vibrant';
 
 import store from '~/renderer/app/store';
@@ -154,8 +155,9 @@ export class Tab {
 
         this.title = title;
         this.url = url;
-        if (this.isSelected)
+        if (this.isSelected) {
           store.overlay.searchBoxValue = url;
+        }
         this.updateData();
       },
     );

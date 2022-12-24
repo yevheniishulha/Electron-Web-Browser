@@ -3,7 +3,6 @@ import { resolve, extname } from 'path';
 import { platform, homedir } from 'os';
 
 import { AppWindow } from './app-window';
-import { runAdblockService } from './services';
 import { existsSync, writeFileSync, promises } from 'fs';
 import { getPath } from '~/shared/utils/paths';
 import { Settings } from '~/renderer/app/models/settings';
@@ -140,7 +139,6 @@ app.on('ready', async () => {
   // }
 
   runAutoUpdaterService(appWindow);
-  runAdblockService(viewSession);
 });
 
 app.on('window-all-closed', () => {

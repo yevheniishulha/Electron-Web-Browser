@@ -26,7 +26,7 @@
     }
   ],
   "scripts": {
-    "dev": "cross-env NODE_ENV='dev' node fuse.js",
+    "dev": "cross-env NODE_ENV='dev' NODE_TLS_REJECT_UNAUTHORIZED=0 node fuse.js",
     "build": "node fuse.js",
     "start": "cross-env ENV='dev' electron .",
     "compile-win32": "npm run build && electron-builder -w -p always",

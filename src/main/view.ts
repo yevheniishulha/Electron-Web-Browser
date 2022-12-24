@@ -1,6 +1,5 @@
 import { BrowserView, app } from 'electron';
 import { appWindow, settings } from '.';
-import { engine } from './services/adblock';
 import { parse } from 'tldts';
 import { getViewMenu } from './menus/view';
 
@@ -45,21 +44,6 @@ export class View extends BrowserView {
       this.updateNavigationState();
 
       const url = this.webContents.getURL();
-
-      // Adblocker cosmetic filtering
-      if (engine && settings.isShieldToggled) {
-        const { styles, scripts } = engine.getCosmeticsFilters({
-          url,
-          ...parse(url),
-        });
-
-        this.webContents.insertCSS(styles);
-
-        for (const script of scripts) {
-          this.webContents.executeJavaScript(script);
-        }
-      }
-
       appWindow.webContents.send(`load-commit-${this.webContents.id}`, ...args);
     });
 
