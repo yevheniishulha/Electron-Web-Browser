@@ -27,10 +27,16 @@ import trash from '~/shared/resources/icons/delete.svg';
 import up from '~/shared/resources/icons/up.svg';
 import shield from '~/shared/resources/icons/shield.svg';
 import night from '~/shared/resources/icons/night.svg';
+import telegram from '~/shared/resources/icons/telegram.svg';
+import viber from '~/shared/resources/icons/viber.svg';
+import duplicate from '~/shared/resources/icons/duplicate.svg';
 
 import fewClouds from '~/shared/resources/icons/weather/few-clouds.png';
 
 export const icons = {
+  telegram,
+  viber,
+  duplicate,
   windowsClose,
   windowsMaximize,
   windowsMinimize,

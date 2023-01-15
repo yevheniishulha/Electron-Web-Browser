@@ -5,31 +5,29 @@ import store from '~/renderer/app/store';
 import ToolbarButton from '~/renderer/app/components/ToolbarButton';
 import { icons } from '~/renderer/app/constants/icons';
 import { StyledContainer } from './style';
+import SitesStore from "~/renderer/app/store/SitesStore";
 
-const onBackClick = () => {
-  store.tabs.selectedTab.callViewMethod('webContents.goBack');
-};
 
-const onForwardClick = () => {
-  store.tabs.selectedTab.callViewMethod('webContents.goForward');
-};
-
-const onHomeClick = () => {
-  store.overlay.visible = true;
-  store.suggestions.list = [];
-  store.tabGroups.currentGroup.selectedTabId = -1;
-}
-
-const onRefreshClick = () => {
-  if (store.tabs.selectedTab && store.tabs.selectedTab.loading) {
-    store.tabs.selectedTab.callViewMethod('webContents.stop');
-  } else {
-    store.tabs.selectedTab.callViewMethod('webContents.reload');
-  }
-};
 
 export const NavigationButtons = observer(() => {
-  const { selectedTab } = store.tabs;
+    const onBackClick = () => {
+        SitesStore.activeStore.tabs.selectedTab.callViewMethod('webContents.goBack');
+    };
+
+    const onForwardClick = () => {
+        SitesStore.activeStore.tabs.selectedTab.callViewMethod('webContents.goForward');
+    };
+
+    const onHomeClick = () => {
+        SitesStore.activeStore.tabGroups.currentGroup.selectedTabId = -1;
+    }
+
+    const onRefreshClick = () => {
+
+        SitesStore.activeStore.tabs.selectedTab.callViewMethod('webContents.reload');
+
+    };
+  const { selectedTab } = SitesStore.activeStore.tabs;
 
   let isWindow = false;
   let loading = false;
@@ -39,17 +37,17 @@ export const NavigationButtons = observer(() => {
     loading = selectedTab.loading;
   }
 
-  return (
-    <StyledContainer isFullscreen={store.isFullscreen}>
+    return (
+    <StyledContainer isFullscreen={SitesStore.activeStore.isFullscreen}>
       <ToolbarButton
-        disabled={!store.navigationState.canGoBack}
+        disabled={!SitesStore.activeStore.navigationState.canGoBack}
         size={24}
         icon={icons.back}
         style={{ marginLeft: 8 }}
         onClick={onBackClick}
       />
       <ToolbarButton
-        disabled={!store.navigationState.canGoForward}
+        disabled={!SitesStore.activeStore.navigationState.canGoForward}
         size={24}
         icon={icons.forward}
         onClick={onForwardClick}
@@ -63,7 +61,7 @@ export const NavigationButtons = observer(() => {
       <ToolbarButton
         disabled={isWindow}
         size={20}
-        icon={loading ? icons.close : icons.refresh}
+        icon={icons.refresh}
         onClick={onRefreshClick}
       />
     </StyledContainer>

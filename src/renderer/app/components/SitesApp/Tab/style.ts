@@ -45,41 +45,6 @@ export const StyledClose = styled.div`
     opacity: 0;
   }
 `;
-export const StyledDuplicate = styled.div`
-  position: absolute;
-  right: 30px;
-  height: 24px;
-  width: 24px;
-  background-image: url('${icons.duplicate}');
-  transition: 0.1s opacity;
-  z-index: 10;
-  ${centerIcon(16)};
-  
-
-    ${({ visible, theme }: CloseProps) => css`
-      opacity: ${visible ? transparency.icons.inactive : 0};
-      filter: ${theme['toolbar.icons.invert'] ? 'invert(100%)' : 'none'};
-    `}
-
-  &:hover {
-    &:after {
-      opacity: 1;
-    }
-  }
-
-  &:after {
-    content: '';
-    border-radius: 50px;
-    background-color: rgba(0, 0, 0, 0.08);
-    transition: 0.2s opacity;
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    opacity: 0;
-  }
-`;
 
 interface TabProps {
   selected: boolean;
@@ -155,7 +120,7 @@ export const StyledContent = styled.div`
   display: flex;
   margin-left: 12px;
   ${({ collapsed }: ContentProps) => css`
-    max-width: calc(100% - ${48 + (collapsed ? 24 : 0)}px);
+    max-width: calc(100% - ${24 + (collapsed ? 24 : 0)}px);
   `};
 `;
 

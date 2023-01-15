@@ -1,21 +1,21 @@
-import { observable, observe, action } from 'mobx';
+import {action, observable} from 'mobx';
 import * as React from 'react';
-import { TweenLite } from 'gsap';
+import {TweenLite} from 'gsap';
 
-import { Tab } from '~/renderer/app/models';
+import {Tab} from '~/renderer/app/models';
 
 import {
-  TAB_ANIMATION_DURATION,
   defaultTabOptions,
+  TAB_ANIMATION_DURATION,
+  TAB_ANIMATION_EASING,
   TABS_PADDING,
   TOOLBAR_HEIGHT,
-  TAB_ANIMATION_EASING,
 } from '~/renderer/app/constants';
 
 import HorizontalScrollbar from '~/renderer/app/components/HorizontalScrollbar';
-import store from '.';
-import { ipcRenderer } from 'electron';
-import { getColorBrightness } from '../utils';
+import store from './SitesStore';
+import {ipcRenderer} from 'electron';
+import {getColorBrightness} from '../utils';
 import Vibrant = require('node-vibrant');
 
 export class TabsStore {
@@ -73,22 +73,21 @@ export class TabsStore {
     ipcRenderer.on('tabs-resize', (e: any) => {
       this.updateTabsBounds(false);
     });
-
     ipcRenderer.on(
-      'api-tabs-create',
+      'api-tabs-create' + store.selectedTabId,
       (
         e: any,
         options: chrome.tabs.CreateProperties,
         isNext: boolean,
         id: number,
+        storageId: string,
+        title: string
       ) => {
         if (isNext) {
-          const index =
-            store.tabGroups.currentGroup.tabs.indexOf(this.selectedTab) + 1;
-          options.index = index;
+          options.index = store.activeStore.tabGroups.currentGroup.tabs.indexOf(this.selectedTab) + 1;
         }
 
-        this.createTab(options, id);
+        this.createTab(options, id, false, storageId, title);
       },
     );
 
@@ -104,7 +103,7 @@ export class TabsStore {
           tab.select();
         }
       } else {
-        tab = this.createTab({}, options.id, true);
+        tab = this.createTab({}, options.id, true, '', '');
         tab.title = options.title;
         tab.favicon = URL.createObjectURL(new Blob([options.icon]));
 
@@ -177,7 +176,7 @@ export class TabsStore {
   }
 
   public get selectedTab() {
-    return this.getTabById(store.tabGroups.currentGroup.selectedTabId);
+    return this.getTabById(store.activeStore.tabGroups.currentGroup.selectedTabId);
   }
 
   public get hoveredTab() {
@@ -191,20 +190,14 @@ export class TabsStore {
   @action public createTab(
     options: chrome.tabs.CreateProperties,
     id: number,
-    isWindow: boolean = false,
+    isWindow: boolean,
+    storageId: string,
+    title: string
   ) {
-    if (isWindow) {
-      store.overlay.visible = false;
-    }
-
-    if (options.active) {
-      store.overlay.visible = false;
-    }
 
     this.removedTabs = 0;
 
-    const tab = new Tab(options, id, store.tabGroups.currentGroupId, isWindow);
-
+    const tab = new Tab(options, id, store.activeStore.tabGroups.currentGroupId, isWindow, storageId, title);
     if (options.index !== undefined) {
       this.list.splice(options.index, 0, tab);
     } else {
@@ -226,8 +219,8 @@ export class TabsStore {
   }
 
   @action
-  public addTab(options = defaultTabOptions) {
-    ipcRenderer.send('view-create', options);
+  public addTab(options = defaultTabOptions, sessionId: string = '', title='') {
+    ipcRenderer.send('view-create', {...options, id:store.selectedTabId, storageId: sessionId, title: title});
   }
 
   public removeTab(id: number) {
@@ -243,7 +236,7 @@ export class TabsStore {
   @action
   public setTabsWidths(animation: boolean) {
     const tabs = this.list.filter(
-      x => !x.isClosing && x.tabGroupId === store.tabGroups.currentGroupId,
+      x => !x.isClosing && x.tabGroupId === store.activeStore.tabGroups.currentGroupId,
     );
 
     const containerWidth = this.containerWidth;
@@ -258,12 +251,12 @@ export class TabsStore {
 
   @action
   public setTabsLefts(animation: boolean) {
-    const tabs = this.list.filter(
-      x => !x.isClosing && x.tabGroupId === store.tabGroups.currentGroupId,
+    const tabs = store.activeStore.tabs.list.filter(
+      x => !x.isClosing && x.tabGroupId === store.activeStore.tabGroups.currentGroupId,
     );
 
-    const { containerWidth } = store.tabs;
-
+    const { containerWidth } = store.activeStore.tabs;
+    console.log('{{{{{{', tabs.length, containerWidth)
     let left = 0;
 
     for (const tab of tabs) {
@@ -272,10 +265,10 @@ export class TabsStore {
       left += tab.width + TABS_PADDING;
     }
 
-    store.addTab.setLeft(
+    setTimeout(() => store.addTab1.setLeft(
       Math.min(left, containerWidth + TABS_PADDING),
       animation,
-    );
+    ), 1000);
   }
 
   @action
@@ -319,7 +312,7 @@ export class TabsStore {
     const selectedTab = this.selectedTab;
 
     this.isDragging = false;
-
+    
     this.setTabsLefts(true);
 
     if (selectedTab) {
@@ -329,14 +322,14 @@ export class TabsStore {
 
   @action
   public onMouseMove = (e: any) => {
-    const tabGroup = store.tabGroups.currentGroup;
+    const tabGroup = store.activeStore && store.activeStore.tabGroups.currentGroup;
     if (!tabGroup) return;
 
-    const { selectedTab } = store.tabs;
+    const { selectedTab } = store.activeStore.tabs;
 
     if (this.isDragging) {
       const container = this.containerRef;
-      const { tabStartX, mouseStartX, lastMouseX, lastScrollLeft } = store.tabs;
+      const { tabStartX, mouseStartX, lastMouseX, lastScrollLeft } = store.activeStore.tabs;
 
       const boundingRect = container.current.getBoundingClientRect();
 
@@ -344,7 +337,7 @@ export class TabsStore {
         return;
       }
 
-      store.canToggleMenu = false;
+      store.activeStore.canToggleMenu = false;
       selectedTab.isDragging = true;
 
       const newLeft =
@@ -357,10 +350,10 @@ export class TabsStore {
 
       if (
         newLeft + selectedTab.width >
-        store.addTab.left + container.current.scrollLeft - TABS_PADDING
+        store.addTab1.left + container.current.scrollLeft - TABS_PADDING
       ) {
         left =
-          store.addTab.left - selectedTab.width + lastScrollLeft - TABS_PADDING;
+          store.addTab1.left - selectedTab.width + lastScrollLeft - TABS_PADDING;
       }
 
       selectedTab.setLeft(left, false);
@@ -369,7 +362,7 @@ export class TabsStore {
         e.pageY > TOOLBAR_HEIGHT + 16 ||
         e.pageY < -16 ||
         e.pageX < boundingRect.left ||
-        e.pageX - boundingRect.left > store.addTab.left
+        e.pageX - boundingRect.left > store.addTab1.left
       ) {
         // TODO: Create a new window
       }
@@ -403,7 +396,7 @@ export class TabsStore {
   }
 
   public onNewTab() {
-    let url = 'https://www.google.com'
+    let url = store.activeSite.url
     this.addTab({ url, active: true });
     ipcRenderer.send('hide-window');
   }

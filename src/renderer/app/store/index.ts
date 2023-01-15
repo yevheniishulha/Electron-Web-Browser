@@ -5,34 +5,23 @@ import { TabsStore } from './tabs';
 import { TabGroupsStore } from './tab-groups';
 import { AddTabStore } from './add-tab';
 import { ipcRenderer, IpcMessageEvent, remote } from 'electron';
-import { OverlayStore } from './overlay';
-import { HistoryStore } from './history';
-import { FaviconsStore } from './favicons';
-import { SuggestionsStore } from './suggestions';
-import { ExtensionsStore } from './extensions';
+
 import { extname } from 'path';
-import { BookmarksStore } from './bookmarks';
 import { readFileSync, writeFile } from 'fs';
 import { getPath } from '~/shared/utils/paths';
 import { Settings } from '../models/settings';
-import { DownloadsStore } from './downloads';
 import { lightTheme, darkTheme } from '~/renderer/constants/themes';
-import { LoginStore } from './login';
-import { SignupStore } from './signup';
+import {FaviconsStore} from "~/renderer/app/store/favicons";
+import {HistoryStore} from "~/renderer/app/store/history";
+
 
 export class Store {
+
   public history = new HistoryStore();
-  public bookmarks = new BookmarksStore();
-  public suggestions = new SuggestionsStore();
   public favicons = new FaviconsStore();
   public addTab = new AddTabStore();
-  public tabGroups = new TabGroupsStore();
+  public tabGroups:TabGroupsStore
   public tabs = new TabsStore();
-  public overlay = new OverlayStore();
-  public extensions = new ExtensionsStore();
-  public downloads = new DownloadsStore();
-  public login = new LoginStore();
-  public signup = new SignupStore();
 
   @observable
   public theme = lightTheme;
@@ -110,43 +99,6 @@ export class Store {
       },
     );
 
-    ipcRenderer.on(
-      'api-browserAction-setBadgeText',
-      (
-        e: IpcMessageEvent,
-        senderId: number,
-        extensionId: string,
-        details: chrome.browserAction.BadgeTextDetails,
-      ) => {
-        if (details.tabId) {
-          const browserAction = this.extensions.queryBrowserAction({
-            extensionId,
-            tabId: details.tabId,
-          })[0];
-
-          if (browserAction) {
-            browserAction.badgeText = details.text;
-          }
-        } else {
-          this.extensions
-            .queryBrowserAction({
-              extensionId,
-            })
-            .forEach(item => {
-              item.badgeText = details.text;
-            });
-        }
-        const contents = remote.webContents.fromId(senderId);
-        contents.send('api-browserAction-setBadgeText');
-      },
-    );
-
-    ipcRenderer.on('find', () => {
-      if (this.tabs.selectedTab) {
-        this.overlay.findVisible = true;
-      }
-    });
-
     ipcRenderer.send('update-check');
 
     requestAnimationFrame(() => {
@@ -179,4 +131,4 @@ export class Store {
   }
 }
 
-export default new Store();
+export default Store;

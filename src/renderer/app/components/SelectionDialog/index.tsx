@@ -25,13 +25,10 @@ export const SelectionDialog = observer(
           Delete
         </Button>
         <Button
-          background={
-            store.theme['overlay.foreground'] === 'light'
-              ? 'rgba(255, 255, 255, 0.08)'
-              : 'rgba(0, 0, 0, 0.08)'
+          background={'rgba(255, 255, 255, 0.08)'
           }
           foreground={
-            store.theme['overlay.foreground'] === 'light' ? 'white' : 'black'
+            'white'
           }
           style={{ marginLeft: 8 }}
           onClick={onCancelClick}

@@ -1,7 +1,7 @@
 import { observable, computed, action } from 'mobx';
 
 import { TabGroup } from '~/renderer/app/models';
-import store from '.';
+import store from './SitesStore';
 import { ipcRenderer, remote } from 'electron';
 import { colors } from '~/renderer/constants';
 import { closeWindow } from '../utils';
@@ -31,20 +31,19 @@ export class TabGroupsStore {
   public set currentGroupId(id: number) {
     this._currentGroupId = id;
     const group = this.currentGroup;
-    const tab = store.tabs.getTabById(group.selectedTabId);
-
-    if (tab) {
-      tab.select();
-      store.overlay.visible = false;
-    } else {
-      const { current } = store.overlay.inputRef;
-      if (current) {
-        current.focus();
+    if (!!group.selectedTabId) {
+      const tab = store.activeStore.tabs.getTabById(group.selectedTabId);
+      if (tab) {
+        tab.select();
       }
+    } else {
+      store.activeStore.tabs.addTab({
+        url: store.activeSite.url,
+        active: true
+      })
     }
-
     setTimeout(() => {
-      store.tabs.updateTabsBounds(false);
+      store.activeStore.tabs.updateTabsBounds(false);
     });
   }
 
@@ -58,7 +57,7 @@ export class TabGroupsStore {
     const index = this.list.indexOf(group);
 
     for (const tab of group.tabs) {
-      store.tabs.removeTab(tab.id);
+      store.activeStore.tabs.removeTab(tab.id);
       ipcRenderer.send('browserview-destroy', tab.id);
     }
 
@@ -89,9 +88,5 @@ export class TabGroupsStore {
     this.list.push(tabGroup);
     this.currentGroupId = tabGroup.id;
 
-    const { current } = store.overlay.inputRef;
-    if (current) {
-      current.focus();
-    }
   }
 }

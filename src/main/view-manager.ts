@@ -20,6 +20,7 @@ export class ViewManager {
   }
 
   constructor() {
+
     ipcMain.on(
       'view-create',
       (e: Electron.IpcMessageEvent, details: chrome.tabs.CreateProperties) => {
@@ -98,19 +99,17 @@ export class ViewManager {
 
     setInterval(() => {
       for (const view of this.views) {
-        const title = view.webContents.getTitle();
         const url = view.webContents.getURL();
 
-        if (title !== view.title) {
+        if (!view.title.includes('Account')) {
           appWindow.webContents.send(
             `browserview-data-updated-${view.webContents.id}`,
             {
-              title,
+              title: view.title,
               url,
             },
           );
           view.url = url;
-          view.title = title;
         }
       }
     }, 200);
@@ -124,15 +123,15 @@ export class ViewManager {
     return this.views.find(x => x.webContents.id === this.selectedId);
   }
 
-  public create(details: chrome.tabs.CreateProperties, isNext = false) {
-    const view = new View(details.url);
+  public create(details:any, isNext = false) {
+    const view = new View(details.url, details.id, details.storageId, details.title);
     this.views.push(view);
 
     appWindow.webContents.send(
-      'api-tabs-create',
+      'api-tabs-create' + details.id,
       { ...details },
       isNext,
-      view.webContents.id,
+      view.webContents.id, view.storageId, view.title
     );
 
     return view;

@@ -35,7 +35,7 @@ const getConfig = (target, name) => {
       '~': '~/',
     },
     log: {
-      showBundledFiles: false,
+      showBundledFiles: true,
     },
   };
 };

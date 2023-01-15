@@ -1,10 +1,9 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { App } from './components/App';
 import { fonts } from '../constants';
-import store from './store';
 import { ipcRenderer } from 'electron';
+import SitesApp from "~/renderer/app/components/SitesApp";
 
 ipcRenderer.setMaxListeners(0);
 
@@ -33,5 +32,5 @@ styleElement.textContent = `
 
 document.head.appendChild(styleElement);
 
-store.tabGroups.addGroup();
-ReactDOM.render(<App />, document.getElementById('app'));
+// store.tabGroups.addGroup();
+ReactDOM.render(<SitesApp />, document.getElementById('app'));

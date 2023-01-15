@@ -12,43 +12,32 @@ import {
   StyledClose,
   StyledBorder,
   StyledOverlay,
-  TabContainer,
+  TabContainer, StyledDuplicate,
 } from './style';
 import { shadeBlendConvert } from '../../utils';
 import { remote } from 'electron';
 import Ripple from '~/renderer/components/Ripple';
+import SitesStore from "~/renderer/app/store/SitesStore";
 
 const removeTab = (tab: Tab) => () => {
   tab.close();
 };
 
+const duplicateTab = (tab: Tab) => () => {
+  tab.duplicate();
+};
+
 const onCloseMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
   e.stopPropagation();
 };
-
-const onMouseDown = (tab: Tab) => (e: React.MouseEvent<HTMLDivElement>) => {
-  const { pageX } = e;
-
-  tab.select();
-
-  store.overlay.visible = false;
-  store.tabs.lastMouseX = 0;
-  store.tabs.isDragging = true;
-  store.tabs.mouseStartX = pageX;
-  store.tabs.tabStartX = tab.left;
-
-  store.tabs.lastScrollLeft = store.tabs.containerRef.current.scrollLeft;
+const onDuplicateMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  e.stopPropagation();
 };
 
-const onMouseEnter = (tab: Tab) => () => {
-  if (!store.tabs.isDragging) {
-    store.tabs.hoveredTabId = tab.id;
-  }
-};
 
-const onMouseLeave = () => {
-  store.tabs.hoveredTabId = -1;
-};
+
+
+
 
 const onClick = (tab: Tab) => (e: React.MouseEvent<HTMLDivElement>) => {
   if (e.button === 4) {
@@ -62,97 +51,16 @@ const onMouseUp = (tab: Tab) => (e: React.MouseEvent<HTMLDivElement>) => {
   }
 };
 
-const onContextMenu = (tab: Tab) => () => {
-  const { tabs } = store.tabGroups.currentGroup;
 
-  const menu = remote.Menu.buildFromTemplate([
-    {
-      label: 'New tab',
-      click: () => {
-        store.tabs.onNewTab();
-      },
-    },
-    {
-      type: 'separator',
-    },
-    {
-      label: 'Reload',
-      click: () => {
-        tab.callViewMethod('webContents.reload');
-      },
-    },
-    {
-      label: 'Duplicate',
-      click: () => {
-        store.tabs.addTab({ active: true, url: tab.url });
-        store.suggestions.list = [];
-      },
-    },
-    {
-      type: 'separator',
-    },
-    {
-      label: 'Close tab',
-      click: () => {
-        removeTab(tab);
-      },
-    },
-    {
-      label: 'Close other tabs',
-      click: () => {
-        for (const t of tabs) {
-          if (t !== tab) {
-            t.close();
-          }
-        }
-      },
-    },
-    {
-      label: 'Close tabs from left',
-      click: () => {
-        for (let i = tabs.indexOf(tab) - 1; i >= 0; i--) {
-          tabs[i].close();
-        }
-      },
-    },
-    {
-      label: 'Close tabs from right',
-      click: () => {
-        for (let i = tabs.length - 1; i > tabs.indexOf(tab); i--) {
-          tabs[i].close();
-        }
-      },
-    },
-    {
-      type: 'separator',
-    },
-    {
-      label: 'Revert closed tab',
-      enabled: store.tabs.closedUrl !== '',
-      click: () => {
-        store.tabs.addTab({ active: true, url: store.tabs.closedUrl });
-      },
-    },
-  ]);
-
-  menu.popup();
-};
 
 const Content = observer(({ tab }: { tab: Tab }) => {
+  const store = SitesStore.activeStore
   return (
     <StyledContent collapsed={tab.isExpanded}>
-      {!tab.loading && tab.favicon !== '' && (
+      {tab.favicon !== '' && (
         <StyledIcon
           isIconSet={tab.favicon !== ''}
           style={{ backgroundImage: `url(${tab.favicon})` }}
-        />
-      )}
-      {tab.loading && (
-        <Preloader
-          color={tab.background}
-          thickness={6}
-          size={16}
-          style={{ minWidth: 16 }}
         />
       )}
       <StyledTitle
@@ -181,11 +89,22 @@ const Close = observer(({ tab }: { tab: Tab }) => {
   );
 });
 
+const Duplicate = observer(({ tab }: { tab: Tab }) => {
+  return (
+    <StyledDuplicate
+      onMouseDown={onDuplicateMouseDown}
+      onClick={duplicateTab(tab)}
+      visible={tab.isExpanded}
+    />
+  );
+});
+
 const Border = observer(({ tab }: { tab: Tab }) => {
   return <StyledBorder visible={tab.borderVisible} />;
 });
 
 const Overlay = observer(({ tab }: { tab: Tab }) => {
+  const store = SitesStore.activeStore
   return (
     <StyledOverlay
       hovered={tab.isHovered}
@@ -203,6 +122,104 @@ const Overlay = observer(({ tab }: { tab: Tab }) => {
 });
 
 export default observer(({ tab }: { tab: Tab }) => {
+
+  const store = SitesStore.activeStore
+  const onMouseDown = (tab: Tab) => (e: React.MouseEvent<HTMLDivElement>) => {
+    const { pageX } = e;
+
+    tab.select();
+
+    store.tabs.lastMouseX = 0;
+    store.tabs.isDragging = true;
+    store.tabs.mouseStartX = pageX;
+    store.tabs.tabStartX = tab.left;
+
+    store.tabs.lastScrollLeft = store.tabs.containerRef.current.scrollLeft;
+  };
+
+  const onMouseEnter = (tab: Tab) => () => {
+    if (!store.tabs.isDragging) {
+      store.tabs.hoveredTabId = tab.id;
+    }
+  };
+  const onMouseLeave = () => {
+    store.tabs.hoveredTabId = -1;
+  };
+  const onContextMenu = (tab: Tab) => () => {
+    const { tabs } = store.tabGroups.currentGroup;
+
+    const menu = remote.Menu.buildFromTemplate([
+      {
+        label: 'New tab',
+        click: () => {
+          store.tabs.onNewTab();
+        },
+      },
+      {
+        type: 'separator',
+      },
+      {
+        label: 'Reload',
+        click: () => {
+          tab.callViewMethod('webContents.reload');
+        },
+      },
+      {
+        label: 'Duplicate',
+        click: () => {
+          store.tabs.addTab({ active: true, url: tab.url });
+        },
+      },
+      {
+        type: 'separator',
+      },
+      {
+        label: 'Close tab',
+        click: () => {
+          removeTab(tab);
+        },
+      },
+      {
+        label: 'Close other tabs',
+        click: () => {
+          for (const t of tabs) {
+            if (t !== tab) {
+              t.close();
+            }
+          }
+        },
+      },
+      {
+        label: 'Close tabs from left',
+        click: () => {
+          for (let i = tabs.indexOf(tab) - 1; i >= 0; i--) {
+            tabs[i].close();
+          }
+        },
+      },
+      {
+        label: 'Close tabs from right',
+        click: () => {
+          for (let i = tabs.length - 1; i > tabs.indexOf(tab); i--) {
+            tabs[i].close();
+          }
+        },
+      },
+      {
+        type: 'separator',
+      },
+      {
+        label: 'Revert closed tab',
+        enabled: store.tabs.closedUrl !== '',
+        click: () => {
+          store.tabs.addTab({ active: true, url: store.tabs.closedUrl });
+        },
+      },
+    ]);
+
+
+    menu.popup();
+  };
   return (
     <StyledTab
       selected={tab.isSelected}
@@ -227,6 +244,7 @@ export default observer(({ tab }: { tab: Tab }) => {
         }}
       >
         <Content tab={tab} />
+        <Duplicate tab={tab} />
         <Close tab={tab} />
 
         <Overlay tab={tab} />

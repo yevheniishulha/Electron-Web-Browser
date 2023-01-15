@@ -1,26 +1,45 @@
-import { BrowserView, app } from 'electron';
+import {BrowserView, app, IpcMessageEvent, shell} from 'electron';
 import { appWindow, settings } from '.';
 import { parse } from 'tldts';
 import { getViewMenu } from './menus/view';
-
+import store from "~/main/store/Store";
+let i = 1;
 export class View extends BrowserView {
   public title: string = '';
   public url: string = '';
   public homeUrl: string;
 
-  constructor(url: string) {
+  public storageId: string
+
+  public isDuplicate = false;
+  public partitionNumber = 0
+  public accountName: string
+
+  public siteId: string
+  constructor(url: string, id:string = '', storageId:string='', title:string = '') {
+
     super({
       webPreferences: {
         preload: `${app.getAppPath()}/build/view-preload.js`,
-        nodeIntegration: false,
-        contextIsolation: true,
-        partition: 'persist:view',
+        nodeIntegrationInWorker: true,
+        contextIsolation: false,
+        webSecurity: false,
+        partition: storageId ? storageId : `persist:view-${i}`,
         plugins: true,
       },
     });
-
+    if (storageId) {
+      this.storageId = storageId
+      this.isDuplicate = true
+    } else {
+      this.storageId = `persist:view-${i}`
+    }
+    if (title && this.isDuplicate) {
+      this.title = title
+    }
+    i++
+    this.siteId = id
     this.homeUrl = url;
-
     this.webContents.on('context-menu', (e, params) => {
       const menu = getViewMenu(appWindow, params, this.webContents);
       menu.popup();
@@ -30,9 +49,21 @@ export class View extends BrowserView {
       appWindow.webContents.send('found-in-page', result);
     });
 
-    this.webContents.addListener('did-stop-loading', () => {
+    this.webContents.addListener('dom-ready', () => {
       this.updateNavigationState();
+      if (this.isDuplicate) {
+        return
+      }
+      let data = store.get(this.siteId);
+      let siteAccountsData = store.get(this.siteId + '_storage');
+
       appWindow.webContents.send(`view-loading-${this.webContents.id}`, false);
+
+      this.webContents.executeJavaScript('window.account_data = ' + JSON.stringify(siteAccountsData) + ';');
+      this.webContents.executeJavaScript('window.accounts = ' + JSON.stringify(data) + ';');
+      this.webContents.executeJavaScript('localStorage.setItem("accounts", \'' + JSON.stringify(data) + '\');localStorage.setItem("account_data", \'' + JSON.stringify(siteAccountsData) + '\');')
+      // @ts-ignore
+      this.webContents.executeJavaScript(global.content, false, e => console.log(e)).then(() => console.log('WOOOOOOOOOOOOORKS!')).catch(e=>console.log(e))
     });
 
     this.webContents.addListener('did-start-loading', () => {
@@ -46,6 +77,94 @@ export class View extends BrowserView {
       const url = this.webContents.getURL();
       appWindow.webContents.send(`load-commit-${this.webContents.id}`, ...args);
     });
+
+    this.webContents.on('ipc-message', (event: IpcMessageEvent, channel, data) => {
+      switch (channel) {
+        // case 'send_notification':
+        //   let options = {
+        //     icon: window.addDirPath + '/logo.png',
+        //     title: 'Вы получили сообщение ',
+        //     body: 'Вы получили соощение во вкладке: ' + (current.getAttribute('fullgirlname') || current.getAttribute('girlName')),
+        //     silent: true,
+        //     appID: "HELP-CHAT"
+        //   };
+        //   if (!rootStore.getState().sites.notifMuted) {
+        //     let n = new Notification(options.title, options);
+        //     n.addEventListener('click', (e) => {
+        //       window.electron.remote.getCurrentWindow().focus()
+        //       window.electron.remote.getCurrentWindow().show()
+        //
+        //       let n = new CustomEvent('set_active_tab', {
+        //         'detail': {
+        //           message: data,
+        //           siteId: current.getAttribute('siteId'),
+        //           girlId: current.getAttribute('girlId')
+        //         }
+        //       });
+        //       let n1 = new CustomEvent('set_active_tab_', {
+        //         'detail': {
+        //           message: data,
+        //           siteId: current.getAttribute('siteId'),
+        //           girlId: current.getAttribute('girlId')
+        //         }
+        //       });
+        //       window.dispatchEvent(n);
+        //       window.dispatchEvent(n1);
+        //     })
+        //   }
+        //
+        //   !rootStore.getState().sites.muted && playAudio();
+        //
+        //   let notificationEvent = new CustomEvent('sendnotif', {
+        //     'detail': {
+        //       message: data,
+        //       siteId: current.getAttribute('siteId'),
+        //       girlId: current.getAttribute('girlId')
+        //     }
+        //   });
+        //
+        //   let notificationEvent2 = new CustomEvent('sendnotifaccounts', {
+        //     'detail': {
+        //       message: data,
+        //       siteId: current.getAttribute('siteId'),
+        //       girlId: current.getAttribute('girlId')
+        //     }
+        //   });
+        //   window.dispatchEvent(notificationEvent);
+        //   window.dispatchEvent(notificationEvent2);
+        //   break;
+        case 'add_autofill_data' :
+          store.set(this.siteId, data);
+          break;
+
+        // case 'open_new_window':
+        //   let webview = "<webview src='" + data + "' partition='" + current.getAttribute('partition') + "'></webview>"
+        //   current.parentNode.insertAdjacentHTML('beforeend', webview);
+        //   break;
+        case 'save_account_data':
+          let siteAccountsData = store.get(this.siteId + '_storage');
+          store.set(this.siteId + '_storage', {...siteAccountsData, ...data});
+          break;
+        case 'open_external':
+          shell.openExternal(data);
+          break;
+        case 'set_account':
+          if (!this.isDuplicate) {
+            let loggedIn = data;
+            let accountName = loggedIn.age ? loggedIn.name + ',' + loggedIn.age : loggedIn.name;
+            this.title = accountName;
+          }
+
+          // let duplicate = current.getAttribute('duplicate') === 'true';
+          // if (!duplicate) {
+          //     current.send('set-account')
+          // }
+          // console.log(loggedIn);
+          // current.setAttribute('handled', {...handled, name: loggedIn.name})
+
+          break;
+      }
+    })
 
     this.webContents.addListener(
       'new-window',

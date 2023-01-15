@@ -4,7 +4,7 @@ import { ipcRenderer } from 'electron';
 // @ts-ignore
 import * as Vibrant from 'node-vibrant';
 
-import store from '~/renderer/app/store';
+import store from '~/renderer/app/store/SitesStore';
 import {
   TABS_PADDING,
   TOOLBAR_HEIGHT,
@@ -13,9 +13,10 @@ import {
 } from '~/renderer/app/constants';
 import { getColorBrightness } from '../utils';
 import { makeId } from '~/shared/utils/string';
+import {title} from "fuse-box/cli/log";
 
 const isColorAcceptable = (color: string) => {
-  if (store.theme['tab.allowLightBackground']) {
+  if (store.activeStore.theme['tab.allowLightBackground']) {
     return getColorBrightness(color) > 120;
   }
 
@@ -30,7 +31,7 @@ export class Tab {
   public isDragging: boolean = false;
 
   @observable
-  public title: string = 'New tab';
+  public title: string = 'Account';
 
   @observable
   public loading: boolean = false;
@@ -45,7 +46,7 @@ export class Tab {
   public width: number = 0;
 
   @observable
-  public background: string = store.theme.accentColor;
+  public background: string = store.activeStore.theme.accentColor;
 
   @observable
   public url = '';
@@ -61,12 +62,12 @@ export class Tab {
 
   @computed
   public get isSelected() {
-    return store.tabGroups.currentGroup.selectedTabId === this.id;
+    return store.activeStore.tabGroups.currentGroup.selectedTabId === this.id;
   }
 
   @computed
   public get isHovered() {
-    return store.tabs.hoveredTabId === this.id;
+    return store.activeStore.tabs.hoveredTabId === this.id;
   }
 
   @computed
@@ -89,7 +90,7 @@ export class Tab {
 
   @computed
   public get isExpanded() {
-    return this.isHovered || this.isSelected || !store.tabs.scrollable;
+    return this.isHovered || this.isSelected || !store.activeStore.tabs.scrollable;
   }
 
   @computed
@@ -105,6 +106,7 @@ export class Tab {
   public hasThemeColor = false;
   public findRequestId: number;
   public removeTimeout: any;
+  public storageId: string;
   public isWindow: boolean = false;
 
   constructor(
@@ -112,10 +114,16 @@ export class Tab {
     id: number,
     tabGroupId: number,
     isWindow: boolean,
+    storageId: string,
+    title: string
   ) {
     this.id = id;
     this.isWindow = isWindow;
     this.tabGroupId = tabGroupId;
+    this.storageId = storageId
+    if (title) {
+      this.title = title;
+    }
 
     if (active) {
       requestAnimationFrame(() => {
@@ -125,42 +133,6 @@ export class Tab {
 
     if (isWindow) return;
 
-    ipcRenderer.on(
-      `browserview-data-updated-${this.id}`,
-      async (e: any, { title, url }: any) => {
-        let updated = null;
-
-        if (url !== this.url) {
-          this.lastHistoryId = await store.history.addItem({
-            title: this.title,
-            url,
-            favicon: this.favicon,
-            date: new Date().toString(),
-          });
-
-          updated = {
-            url,
-          };
-        }
-
-        if (title !== this.title) {
-          updated = {
-            title,
-          };
-        }
-
-        if (updated) {
-          this.emitOnUpdated(updated);
-        }
-
-        this.title = title;
-        this.url = url;
-        if (this.isSelected) {
-          store.overlay.searchBoxValue = url;
-        }
-        this.updateData();
-      },
-    );
 
     ipcRenderer.on(
       `load-commit-${this.id}`,
@@ -183,7 +155,7 @@ export class Tab {
         try {
           this.favicon = favicon;
 
-          const fav = await store.favicons.addFavicon(favicon);
+          const fav = await store.activeStore.favicons.addFavicon(favicon);
           const buf = Buffer.from(fav.split('base64,')[1], 'base64');
 
           if (!this.hasThemeColor) {
@@ -194,7 +166,7 @@ export class Tab {
             if (isColorAcceptable(palette.Vibrant.hex)) {
               this.background = palette.Vibrant.hex;
             } else {
-              this.background = store.theme.accentColor;
+              this.background = store.activeStore.theme.accentColor;
             }
           }
         } catch (e) {
@@ -216,7 +188,7 @@ export class Tab {
           this.background = themeColor;
           this.hasThemeColor = true;
         } else {
-          this.background = store.theme.accentColor;
+          this.background = store.activeStore.theme.accentColor;
           this.hasThemeColor = false;
         }
       },
@@ -230,13 +202,6 @@ export class Tab {
       });
     });
 
-    const { defaultBrowserActions, browserActions } = store.extensions;
-
-    for (const item of defaultBrowserActions) {
-      const browserAction = { ...item };
-      browserAction.tabId = this.id;
-      browserActions.push(browserAction);
-    }
   }
 
   @action
@@ -244,7 +209,7 @@ export class Tab {
     if (this.lastHistoryId) {
       const { title, url, favicon } = this;
 
-      const item = store.history.getById(this.lastHistoryId);
+      const item = store.activeStore.history.getById(this.lastHistoryId);
 
       if (item) {
         item.title = title;
@@ -252,7 +217,7 @@ export class Tab {
         item.favicon = favicon;
       }
 
-      store.history.db.update(
+      store.activeStore.history.db.update(
         {
           _id: this.lastHistoryId,
         },
@@ -268,13 +233,13 @@ export class Tab {
   }
 
   public get tabGroup() {
-    return store.tabGroups.getGroupById(this.tabGroupId);
+    return store.activeStore.tabGroups.getGroupById(this.tabGroupId);
   }
 
   @action
   public select() {
     if (!this.isClosing) {
-      store.canToggleMenu = this.isSelected;
+      store.activeStore.canToggleMenu = this.isSelected;
 
       this.tabGroup.selectedTabId = this.id;
 
@@ -286,32 +251,32 @@ export class Tab {
         ipcRenderer.send('browserview-show');
         ipcRenderer.send('view-select', this.id);
 
-        store.tabs.emitEvent('onActivated', {
+        store.activeStore.tabs.emitEvent('onActivated', {
           tabId: this.id,
           windowId: 0,
         });
       }
 
       requestAnimationFrame(() => {
-        store.tabs.updateTabsBounds(true);
+        store.activeStore.tabs.updateTabsBounds(true);
       });
     }
-    store.overlay.searchBoxValue = this.url;
+
   }
 
   public getWidth(containerWidth: number = null, tabs: Tab[] = null) {
     if (containerWidth === null) {
-      containerWidth = store.tabs.containerWidth;
+      containerWidth = store.activeStore.tabs.containerWidth;
     }
 
     if (tabs === null) {
-      tabs = store.tabs.list.filter(
+      tabs = store.activeStore.tabs.list.filter(
         x => x.tabGroupId === this.tabGroupId && !x.isClosing,
       );
     }
 
     const width =
-      containerWidth / (tabs.length + store.tabs.removedTabs) - TABS_PADDING;
+      containerWidth / (tabs.length + store.activeStore.tabs.removedTabs) - TABS_PADDING;
 
     if (width > 200) {
       return 200;
@@ -338,14 +303,22 @@ export class Tab {
 
   @action
   public setLeft(left: number, animation: boolean) {
-    store.tabs.animateProperty('x', this.ref.current, left, animation);
+    store.activeStore.tabs.animateProperty('x', this.ref.current, left, animation);
     this.left = left;
   }
 
   @action
   public setWidth(width: number, animation: boolean) {
-    store.tabs.animateProperty('width', this.ref.current, width, animation);
+    store.activeStore.tabs.animateProperty('width', this.ref.current, width, animation);
     this.width = width;
+  }
+
+  @action
+  public duplicate() {
+    store.activeStore.tabs.addTab({
+      url: store.activeSite.url,
+      active: true
+    }, this.storageId, this.title)
   }
 
   @action
@@ -353,7 +326,7 @@ export class Tab {
     const tabGroup = this.tabGroup;
     const { tabs } = tabGroup;
 
-    store.tabs.closedUrl = this.url;
+    store.activeStore.tabs.closedUrl = this.url;
 
     const selected = tabGroup.selectedTabId === this.id;
 
@@ -366,7 +339,7 @@ export class Tab {
     const notClosingTabs = tabs.filter(x => !x.isClosing);
     let index = notClosingTabs.indexOf(this);
 
-    store.tabs.resetRearrangeTabsTimer();
+    store.activeStore.tabs.resetRearrangeTabsTimer();
 
     this.isClosing = true;
     if (notClosingTabs.length - 1 === index) {
@@ -374,13 +347,13 @@ export class Tab {
       if (previousTab) {
         this.setLeft(previousTab.getLeft(true) + this.getWidth(), true);
       }
-      store.tabs.updateTabsBounds(true);
+      store.activeStore.tabs.updateTabsBounds(true);
     } else {
-      store.tabs.removedTabs++;
+      store.activeStore.tabs.removedTabs++;
     }
 
     this.setWidth(0, true);
-    store.tabs.setTabsLefts(true);
+    store.activeStore.tabs.setTabsLefts(true);
 
     if (selected) {
       index = tabs.indexOf(this);
@@ -388,7 +361,7 @@ export class Tab {
       if (
         index + 1 < tabs.length &&
         !tabs[index + 1].isClosing &&
-        !store.tabs.scrollable
+        !store.activeStore.tabs.scrollable
       ) {
         const nextTab = tabs[index + 1];
         nextTab.select();
@@ -398,20 +371,14 @@ export class Tab {
       }
     }
 
-    if (this.tabGroup.tabs.length === 1) {
-      store.overlay.isNewTab = true;
-      store.overlay.visible = true;
-      store.overlay.searchBoxValue = '';
-      store.suggestions.list = [];
-    }
 
     this.removeTimeout = setTimeout(() => {
-      store.tabs.removeTab(this.id);
+      store.activeStore.tabs.removeTab(this.id);
     }, TAB_ANIMATION_DURATION * 1000);
   }
 
   public emitOnUpdated = (data: any) => {
-    store.tabs.emitEvent('onUpdated', this.id, data, this.getApiTab());
+    store.activeStore.tabs.emitEvent('onUpdated', this.id, data, this.getApiTab());
   };
 
   callViewMethod = (scope: string, ...args: any[]): Promise<any> => {

@@ -6,6 +6,11 @@ const goBack = () => {
   ipcRenderer.send('browserview-call', { tabId, scope: 'webContents.goBack' });
 };
 
+// @ts-ignore
+window.callHost = (channel:string, data:any) => {
+  ipcRenderer.send(channel, data)
+}
+
 const goForward = () => {
   ipcRenderer.send('browserview-call', {
     tabId,
