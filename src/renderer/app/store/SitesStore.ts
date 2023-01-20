@@ -1,32 +1,22 @@
 import * as React from 'react';
 import {computed, observable} from 'mobx';
 
-import { TabsStore } from './tabs';
-import { TabGroupsStore } from './tab-groups';
 import { AddTabStore } from './add-tab';
 import { ipcRenderer, IpcMessageEvent, remote } from 'electron';
-import { OverlayStore } from './overlay';
-import { HistoryStore } from './history';
-import { FaviconsStore } from './favicons';
-import { SuggestionsStore } from './suggestions';
-import { ExtensionsStore } from './extensions';
-import { extname } from 'path';
-import { BookmarksStore } from './bookmarks';
-import { readFileSync, writeFile } from 'fs';
-import { getPath } from '~/shared/utils/paths';
-import { Settings } from '../models/settings';
-import { DownloadsStore } from './downloads';
-import { lightTheme, darkTheme } from '~/renderer/constants/themes';
-import { LoginStore } from './login';
-import { SignupStore } from './signup';
+
+import { lightTheme } from '~/renderer/constants/themes';
+
 import {SiteTabsStore} from "~/renderer/app/store/sites-tabs";
 import {SitesAddTabAddTabStore} from "~/renderer/app/store/sites-add-tab";
 import Store from "~/renderer/app/store/index";
 import {Site} from "~/renderer/app/constants/sites";
+import Settings from "~/renderer/app/store/settings";
 
 class SitesStore {
     public addTab = new SitesAddTabAddTabStore();
     public addTab1 = new AddTabStore();
+
+    public settings: Settings = new Settings()
     @observable
     public _sitesListVisible: boolean = true;
     @observable

@@ -10,6 +10,7 @@ import store from "~/renderer/app/store/SitesStore";
 import {StyledToolbar} from "~/renderer/app/components/Toolbar/style";
 import {App} from "~/renderer/app/components/App";
 const GlobalStyle = createGlobalStyle`${Style}`;
+import SettingsButton from "~/renderer/app/components/SitesApp/SettingsButton";
 const Sites = observer(() => {
   return(
       <ThemeProvider theme={lightTheme}>
@@ -20,7 +21,9 @@ const Sites = observer(() => {
               </StyledToolbar>
               <Overlay />
               {!store.sitesListVisible && <App/>}
+              <SettingsButton />
           </StyledApp>
+
       </ThemeProvider>
   )
 })

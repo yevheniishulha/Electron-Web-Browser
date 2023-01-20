@@ -27,7 +27,7 @@ export const Header = ({ children, clickable }: any) => {
 
 export const Overlay = observer(() => {
   return (
-    <StyledOverlay visible={store.sitesListVisible} style={{top: '20px'}}>
+    <StyledOverlay visible={store.sitesListVisible} style={{top: '33px'}}>
       <Handle visible={store.sitesListVisible} />
       <PortalsList />
     </StyledOverlay>

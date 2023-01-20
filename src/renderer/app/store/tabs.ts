@@ -14,9 +14,10 @@ import {
 
 import HorizontalScrollbar from '~/renderer/app/components/HorizontalScrollbar';
 import store from './SitesStore';
-import {ipcRenderer} from 'electron';
+import {app, ipcRenderer} from 'electron';
 import {getColorBrightness} from '../utils';
 import Vibrant = require('node-vibrant');
+import {resolve} from "path";
 
 export class TabsStore {
   @observable

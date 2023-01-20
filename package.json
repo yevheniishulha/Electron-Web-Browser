@@ -1,7 +1,7 @@
 {
-  "name": "browser",
-  "version": "2.1.0",
-  "description": "Extensible, fast and innovative web browser with material UI.",
+  "name": "help-chat",
+  "version": "2.0.0",
+  "description": "A minimal Electron application",
   "keywords": [
     "web-browser",
     "material",
@@ -12,19 +12,9 @@
   ],
   "main": "build/main.js",
   "author": {
-    "name": "Eryk Rakowski",
-    "email": "sentialx@gmail.com"
+    "name": "Yevhenii SHulha",
+    "email": "y.shulga393@gmail.com"
   },
-  "contributors": [
-    {
-      "name": "Eryk Rakowski",
-      "email": "sentialx@gmail.com"
-    },
-    {
-      "name": "Mikołaj Palkiewicz",
-      "email": "xnerhu@gmail.com"
-    }
-  ],
   "scripts": {
     "dev": "cross-env NODE_ENV='dev' NODE_TLS_REJECT_UNAUTHORIZED=0 node fuse.js",
     "build": "node fuse.js",
@@ -53,7 +43,7 @@
     "concurrently": "4.1.0",
     "cross-env": "5.2.0",
     "electron": "5.0.1",
-    "electron-builder": "20.40.2",
+    "electron-builder": "^23.6.0",
     "fuse-box": "3.7.1",
     "prettier": "1.17.0",
     "terser": "3.17.0",
@@ -65,7 +55,9 @@
   },
   "dependencies": {
     "@cliqz/adblocker": "0.9.1",
+    "@electron/rebuild": "^3.2.10",
     "@material-ui/core": "^4.12.4",
+    "@material-ui/icons": "^4.11.3",
     "axios": "^0.18.1",
     "braces": "^3.0.2",
     "electron-extensions": "1.0.0",

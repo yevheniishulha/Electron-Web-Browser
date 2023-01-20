@@ -14,6 +14,9 @@ import {
 import { getColorBrightness } from '../utils';
 import { makeId } from '~/shared/utils/string';
 import {title} from "fuse-box/cli/log";
+import sitesStore from "~/renderer/app/store/SitesStore";
+import {Site} from "~/renderer/app/constants/sites";
+import SitesStore from "~/renderer/app/store/SitesStore";
 
 const isColorAcceptable = (color: string) => {
   if (store.activeStore.theme['tab.allowLightBackground']) {
@@ -53,6 +56,9 @@ export class Tab {
 
   @observable
   public findOccurrences = '0/0';
+
+  @observable
+  public isHighlighted = false;
 
   @observable
   public findText = '';
@@ -109,6 +115,8 @@ export class Tab {
   public storageId: string;
   public isWindow: boolean = false;
 
+  public site: Site = sitesStore.activeSite
+
   constructor(
     { active } = defaultTabOptions,
     id: number,
@@ -133,6 +141,44 @@ export class Tab {
 
     if (isWindow) return;
 
+    ipcRenderer.on(
+      `browserview-data-updated-${this.id}`,
+      async (e: any, { title, url }: any) => {
+        let updated = null;
+
+        if (url !== this.url) {
+
+          updated = {
+            url,
+          };
+        }
+
+        if (title !== this.title) {
+          updated = {
+            title,
+          };
+        }
+
+        if (updated) {
+          this.emitOnUpdated(updated);
+        }
+
+        this.title = title;
+        this.url = url;
+
+        this.updateData();
+      },
+    );
+
+    ipcRenderer.on(`highlight-tab-${this.id}`, () => {
+      if (!SitesStore.settings.muted) {
+        const sound = new Audio('http://testplug.help-chat.com.ua/assets/HCApp_prod/my-app/public/burp.mp3')
+        sound.play().then(e => console.log(e))
+      }
+
+      this.isHighlighted = true
+      sitesStore.tabs.list.find(x => x.site.alias === this.site.alias).isHighlighted = true;
+    })
 
     ipcRenderer.on(
       `load-commit-${this.id}`,
@@ -238,6 +284,7 @@ export class Tab {
 
   @action
   public select() {
+    this.isHighlighted = false;
     if (!this.isClosing) {
       store.activeStore.canToggleMenu = this.isSelected;
 

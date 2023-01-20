@@ -1,11 +1,13 @@
 {
-  "appId": "org.browser.browser",
-  "productName": "Browser",
+  "appId": "help-chat",
+  "productName": "help-chat",
 
   "nsis": {
     "include": "static/installer.nsh"
   },
-
+  "extraMetadata": {
+    "main": "build/main.js"
+  },
   "asar": true,
   "directories": {
     "output": "dist",
@@ -27,13 +29,5 @@
   },
   "mac": {
     "category": "public.app-category.navigation"
-  },
-  "fileAssociations": [
-    {
-      "name": "Document",
-      "description": "Browser",
-      "role": "Viewer",
-      "ext": "html"
-    }
-  ]
+  }
 }

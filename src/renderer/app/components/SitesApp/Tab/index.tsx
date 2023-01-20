@@ -149,7 +149,7 @@ export default observer(({ tab }: { tab: SiteTab }) => {
                 tab.background,
                 store.theme['toolbar.backgroundColor'],
               )
-            : 'transparent',
+            : tab.isHighlighted ? 'orange' : 'transparent',
         }}
       >
         <Content tab={tab} />

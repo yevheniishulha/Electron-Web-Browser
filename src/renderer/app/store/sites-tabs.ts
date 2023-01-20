@@ -11,7 +11,6 @@ import {
 import HorizontalScrollbar from '~/renderer/app/components/HorizontalScrollbar';
 import store from './SitesStore';
 import { ipcRenderer } from 'electron';
-import Vibrant = require('node-vibrant');
 import {makeId} from "~/shared/utils/string";
 import {TweenLite} from "gsap";
 import {Site} from "~/renderer/app/constants/sites";
@@ -327,6 +326,9 @@ export class SiteTab {
     public favicon: string = '';
 
     @observable
+    public isHighlighted = false;
+
+    @observable
     public store:Store;
     @observable
     public site:Site;
@@ -421,6 +423,7 @@ export class SiteTab {
 
     @action
     public select() {
+        this.isHighlighted = false;
         if (!this.isClosing) {
 
             store.selectedTabId = this.id;
@@ -430,6 +433,7 @@ export class SiteTab {
 
             requestAnimationFrame(() => {
                 store.tabs.updateTabsBounds(true);
+                store.activeStore.tabs.selectedTab.select()
                 store.activeStore.tabs.updateTabsBounds(true);
             });
 

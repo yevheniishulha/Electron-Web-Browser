@@ -1,9 +1,11 @@
-import {BrowserView, app, IpcMessageEvent, shell} from 'electron';
+import {BrowserView, app, IpcMessageEvent, shell, Notification, remote} from 'electron';
 import { appWindow, settings } from '.';
 import { parse } from 'tldts';
 import { getViewMenu } from './menus/view';
 import store from "~/main/store/Store";
+import {resolve} from "path";
 let i = 1;
+
 export class View extends BrowserView {
   public title: string = '';
   public url: string = '';
@@ -80,59 +82,26 @@ export class View extends BrowserView {
 
     this.webContents.on('ipc-message', (event: IpcMessageEvent, channel, data) => {
       switch (channel) {
-        // case 'send_notification':
-        //   let options = {
-        //     icon: window.addDirPath + '/logo.png',
-        //     title: 'Вы получили сообщение ',
-        //     body: 'Вы получили соощение во вкладке: ' + (current.getAttribute('fullgirlname') || current.getAttribute('girlName')),
-        //     silent: true,
-        //     appID: "HELP-CHAT"
-        //   };
-        //   if (!rootStore.getState().sites.notifMuted) {
-        //     let n = new Notification(options.title, options);
-        //     n.addEventListener('click', (e) => {
-        //       window.electron.remote.getCurrentWindow().focus()
-        //       window.electron.remote.getCurrentWindow().show()
-        //
-        //       let n = new CustomEvent('set_active_tab', {
-        //         'detail': {
-        //           message: data,
-        //           siteId: current.getAttribute('siteId'),
-        //           girlId: current.getAttribute('girlId')
-        //         }
-        //       });
-        //       let n1 = new CustomEvent('set_active_tab_', {
-        //         'detail': {
-        //           message: data,
-        //           siteId: current.getAttribute('siteId'),
-        //           girlId: current.getAttribute('girlId')
-        //         }
-        //       });
-        //       window.dispatchEvent(n);
-        //       window.dispatchEvent(n1);
-        //     })
-        //   }
-        //
-        //   !rootStore.getState().sites.muted && playAudio();
-        //
-        //   let notificationEvent = new CustomEvent('sendnotif', {
-        //     'detail': {
-        //       message: data,
-        //       siteId: current.getAttribute('siteId'),
-        //       girlId: current.getAttribute('girlId')
-        //     }
-        //   });
-        //
-        //   let notificationEvent2 = new CustomEvent('sendnotifaccounts', {
-        //     'detail': {
-        //       message: data,
-        //       siteId: current.getAttribute('siteId'),
-        //       girlId: current.getAttribute('girlId')
-        //     }
-        //   });
-        //   window.dispatchEvent(notificationEvent);
-        //   window.dispatchEvent(notificationEvent2);
-        //   break;
+        case 'send_notification':
+          let options = {
+            icon: resolve(app.getAppPath(), 'static/app-icons/icon.png'),
+            title: 'Вы получили сообщение ',
+            body: 'Вы получили соощение во вкладке: ' + (this.title),
+            appID: "HELP-CHAT",
+            silent: !appWindow.viewManager.mutedNotif
+          };
+          if (!appWindow.viewManager.mutedNotif) {
+            let n = new Notification(options);
+            n.show();
+
+            appWindow.webContents.send(
+                `highlight-tab-${this.webContents.id}`
+            );
+          }
+
+
+
+          break;
         case 'add_autofill_data' :
           store.set(this.siteId, data);
           break;

@@ -6,6 +6,10 @@ import { View } from './view';
 export class ViewManager {
   public views: View[] = [];
   public selectedId = 0;
+
+  public muted = false;
+
+  public mutedNotif = false
   public _fullscreen = false;
 
   public isHidden = false;
@@ -36,6 +40,25 @@ export class ViewManager {
         view.updateNavigationState();
 
         if (force) this.isHidden = false;
+      },
+    );
+
+    ipcMain.on(
+      'setting-zoom-level',
+      (e: Electron.IpcMessageEvent, details: any) => {
+        appWindow.webContents.setZoomLevel(details)
+      },
+    );
+    ipcMain.on(
+      'setting-muted',
+      (e: Electron.IpcMessageEvent, details: any) => {
+        this.muted = details;
+      },
+    );
+    ipcMain.on(
+      'setting-notif-muted',
+      (e: Electron.IpcMessageEvent, details: any) => {
+        this.mutedNotif = details
       },
     );
 

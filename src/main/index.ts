@@ -9,6 +9,7 @@ import { Settings } from '~/renderer/app/models/settings';
 import { makeId } from '~/shared/utils/string';
 import fetch from 'electron-fetch';
 import { runAutoUpdaterService } from './services/auto-updater';
+import {getMainMenu} from "~/main/menus/main";
 
 export const log = require('electron-log');
 
