@@ -2,7 +2,7 @@ import { BrowserWindow, app, ipcMain, globalShortcut, screen } from 'electron';
 import { resolve, join } from 'path';
 import { platform } from 'os';
 import { windowManager, Window } from 'node-window-manager';
-import mouseEvents from 'mouse-hooks';
+// import mouseEvents from 'mouse-hooks';
 
 import { ViewManager } from './view-manager';
 import { getPath } from '~/shared/utils/paths';
@@ -195,71 +195,71 @@ export class AppWindow extends BrowserWindow {
       }
     });
 
-    mouseEvents.on('mouse-down', () => {
-      if (this.isMinimized()) return;
+    // mouseEvents.on('mouse-down', () => {
+    //   if (this.isMinimized()) return;
+    //
+    //   setTimeout(() => {
+    //     this.draggedWindow = new ProcessWindow(
+    //       windowManager.getActiveWindow().handle,
+    //     );
+    //
+    //     if (this.draggedWindow.handle === handle) {
+    //       this.draggedWindow = null;
+    //       return;
+    //     }
+    //   }, 50);
+    // });
 
-      setTimeout(() => {
-        this.draggedWindow = new ProcessWindow(
-          windowManager.getActiveWindow().handle,
-        );
-
-        if (this.draggedWindow.handle === handle) {
-          this.draggedWindow = null;
-          return;
-        }
-      }, 50);
-    });
-
-    mouseEvents.on('mouse-up', async data => {
-      if (this.selectedWindow && !this.isMoving) {
-        const bounds = this.selectedWindow.getBounds();
-        const { lastBounds } = this.selectedWindow;
-
-        if (
-          !this.isMaximized() &&
-          (bounds.width !== lastBounds.width ||
-            bounds.height !== lastBounds.height)
-        ) {
-          this.isUpdatingContentBounds = true;
-
-          clearInterval(this.interval);
-
-          const sf = windowManager.getScaleFactor(this.window.getMonitor());
-
-          this.selectedWindow.lastBounds = bounds;
-
-          this.setContentBounds({
-            width: bounds.width,
-            height: bounds.height + TOOLBAR_HEIGHT,
-            x: bounds.x,
-            y: bounds.y - TOOLBAR_HEIGHT - 1,
-          });
-
-          this.interval = setInterval(this.intervalCallback, 100);
-
-          this.isUpdatingContentBounds = false;
-        }
-      }
-
-      this.isMoving = false;
-
-      if (this.draggedWindow && this.willAttachWindow) {
-        const win = this.draggedWindow;
-
-        win.setOwner(this.window);
-
-        this.windows.push(win);
-
-        this.willAttachWindow = false;
-
-        setTimeout(() => {
-          this.selectWindow(win);
-        }, 50);
-      }
-
-      this.draggedWindow = null;
-      this.detached = false;
-    });
+    // mouseEvents.on('mouse-up', async data => {
+    //   if (this.selectedWindow && !this.isMoving) {
+    //     const bounds = this.selectedWindow.getBounds();
+    //     const { lastBounds } = this.selectedWindow;
+    //
+    //     if (
+    //       !this.isMaximized() &&
+    //       (bounds.width !== lastBounds.width ||
+    //         bounds.height !== lastBounds.height)
+    //     ) {
+    //       this.isUpdatingContentBounds = true;
+    //
+    //       clearInterval(this.interval);
+    //
+    //       const sf = windowManager.getScaleFactor(this.window.getMonitor());
+    //
+    //       this.selectedWindow.lastBounds = bounds;
+    //
+    //       this.setContentBounds({
+    //         width: bounds.width,
+    //         height: bounds.height + TOOLBAR_HEIGHT,
+    //         x: bounds.x,
+    //         y: bounds.y - TOOLBAR_HEIGHT - 1,
+    //       });
+    //
+    //       this.interval = setInterval(this.intervalCallback, 100);
+    //
+    //       this.isUpdatingContentBounds = false;
+    //     }
+    //   }
+    //
+    //   this.isMoving = false;
+    //
+    //   if (this.draggedWindow && this.willAttachWindow) {
+    //     const win = this.draggedWindow;
+    //
+    //     win.setOwner(this.window);
+    //
+    //     this.windows.push(win);
+    //
+    //     this.willAttachWindow = false;
+    //
+    //     setTimeout(() => {
+    //       this.selectWindow(win);
+    //     }, 50);
+    //   }
+    //
+    //   this.draggedWindow = null;
+    //   this.detached = false;
+    // });
   }
 
   intervalCallback = () => {

@@ -1,5 +1,5 @@
 import { windowManager, Window } from 'node-window-manager';
-import mouseEvents from 'mouse-hooks';
+// import mouseEvents from 'mouse-hooks';
 import { appWindow } from '..';
 
 export class ProcessWindow extends Window {
@@ -25,16 +25,16 @@ export class ProcessWindow extends Window {
   public detach() {
     this.setOwner(null);
 
-    mouseEvents.once('mouse-up', () => {
-      setTimeout(() => {
-        this.setBounds({
-          width: this.initialBounds.width,
-          height: this.initialBounds.height,
-        });
-
-        appWindow.webContents.send('remove-tab', this.handle);
-      }, 50);
-    });
+    // mouseEvents.once('mouse-up', () => {
+    //   setTimeout(() => {
+    //     this.setBounds({
+    //       width: this.initialBounds.width,
+    //       height: this.initialBounds.height,
+    //     });
+    //
+    //     appWindow.webContents.send('remove-tab', this.handle);
+    //   }, 50);
+    // });
   }
 
   public show() {
